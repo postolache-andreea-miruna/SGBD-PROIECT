@@ -1,0 +1,2126 @@
+--proiect sgbd POSTOLACHE ANDREEA MIRUNA, grupa 242
+CREATE TABLE CLUB
+(id_club NUMBER(5),
+nume_club VARCHAR2(50) CONSTRAINT nume_club_nn NOT NULL,
+UNIQUE (nume_club)
+);
+ALTER TABLE CLUB 
+ADD CONSTRAINT id_club_pk PRIMARY KEY (id_club);
+
+
+CREATE TABLE ANTRENOR
+(
+id_antrenor NUMBER(5),
+nume VARCHAR2(25) CONSTRAINT nume_antrenor_nn NOT NULL,
+prenume VARCHAR2(25) CONSTRAINT prenume_antrenor_nn NOT NULL,
+anul_nasterii DATE CONSTRAINT nastere_nn NOT NULL,
+gen CHAR(1) CONSTRAINT gen_nn NOT NULL, 
+ani_experienta NUMBER(3),--poate fi null
+salariu NUMBER(8,2) CONSTRAINT salariu_min CHECK (salariu>300.00),
+id_club NUMBER(5),
+CONSTRAINT genul CHECK (gen='M' OR gen='F')
+);
+ALTER TABLE ANTRENOR
+ADD CONSTRAINT id_antrenor_pk PRIMARY KEY(id_antrenor);
+ALTER TABLE ANTRENOR
+ADD CONSTRAINT id_club_fk FOREIGN KEY(id_club) REFERENCES CLUB (id_club);
+ALTER TABLE ANTRENOR
+MODIFY id_club number(5) NOT NULL;
+
+
+CREATE TABLE NATIONALITATE
+(
+id_nationalitate NUMBER(5),
+nume_nationalitate VARCHAR2(15) CONSTRAINT nationalitate_sportiv_nn NOT NULL,
+UNIQUE (nume_nationalitate),
+CONSTRAINT id_nationalitate_pk PRIMARY KEY (id_nationalitate)
+);
+
+
+CREATE TABLE SPORTIV
+(
+id_sportiv NUMBER(5),
+gen CHAR(1) CONSTRAINT genul_sp_nn NOT NULL,
+nume VARCHAR2(25) CONSTRAINT nume_sportiv_nn NOT NULL,
+prenume VARCHAR2(25) CONSTRAINT prenume_sportiv_nn NOT NULL,
+anul_nasterii DATE CONSTRAINT nastere_sp_nn NOT NULL,
+id_nationalitate NUMBER(5)CONSTRAINT nationalitate_sp_nn NOT NULL,
+CONSTRAINT genul_sp CHECK (gen='M' OR gen='F'),
+tip_sportiv VARCHAR2(25) CONSTRAINT tip_sportiv_nn NOT NULL,
+indemnizatie NUMBER(5,1),
+id_antrenor NUMBER(5),
+CONSTRAINT id_sportiv_pk PRIMARY KEY (id_sportiv),
+CONSTRAINT id_antrenor_fk FOREIGN KEY(id_antrenor) REFERENCES ANTRENOR(id_antrenor),
+CONSTRAINT id_nationalitate_fk FOREIGN KEY(id_nationalitate) REFERENCES NATIONALITATE(id_nationalitate)
+);
+ALTER TABLE SPORTIV
+MODIFY id_antrenor number(5) NOT NULL;
+
+
+CREATE TABLE SPONSOR
+(id_sponsor NUMBER(5),
+nume VARCHAR2(50) CONSTRAINT nume_sponsor_nn NOT NULL,
+suma_contributie NUMBER(5,1)  CONSTRAINT suma_sponsor_nn NOT NULL,
+UNIQUE (nume),
+CONSTRAINT id_sponsor_pk PRIMARY KEY (id_sponsor)
+);
+
+
+CREATE TABLE SPONSORIZEAZA
+( id_sponsor NUMBER(5),
+id_sportiv NUMBER(5),
+inceput_colaborare DATE CONSTRAINT inc_colab_nn NOT NULL,
+sfarsit_colaborare DATE CONSTRAINT sf_colab_nn NOT NULL,
+CONSTRAINT datele CHECK (inceput_colaborare<sfarsit_colaborare),
+CONSTRAINT pk_id_sponsor_id_sportiv_colab PRIMARY KEY (id_sponsor,id_sportiv,inceput_colaborare),
+CONSTRAINT id_sponsor_fk FOREIGN KEY (id_sponsor) REFERENCES SPONSOR (id_sponsor),
+CONSTRAINT id_sportiv_fk FOREIGN KEY (id_sportiv) REFERENCES SPORTIV (id_sportiv)
+);
+
+
+CREATE TABLE TIP
+(id_tip NUMBER(5),
+tip_competitie VARCHAR2(20) CONSTRAINT comp_tip_nn NOT NULL,
+UNIQUE(tip_competitie)
+);
+ALTER TABLE TIP
+ADD CONSTRAINT id_tip_pk PRIMARY KEY (id_tip);
+
+
+CREATE TABLE TARA
+(id_tara CHAR(2),
+nume_tara VARCHAR2(25) CONSTRAINT nume_tara_nn NOT NULL,
+UNIQUE(nume_tara)
+);
+ALTER TABLE TARA
+ADD CONSTRAINT id_tara_pk PRIMARY KEY (id_tara);
+
+
+CREATE TABLE ORAS
+(id_oras NUMBER(5),
+nume_oras VARCHAR2(25) CONSTRAINT nume_oras_nn NOT NULL,
+id_tara CHAR(2),
+CONSTRAINT id_oras_pk PRIMARY KEY (id_oras),
+CONSTRAINT id_tara_fk FOREIGN KEY (id_tara) REFERENCES TARA (id_tara),
+UNIQUE (nume_oras)
+);
+ALTER TABLE oras
+MODIFY id_tara char(2) NOT NULL;
+
+
+CREATE TABLE COMPETITIE
+(id_competitie NUMBER(5),
+nume  VARCHAR2(30) CONSTRAINT nume_comp_nn NOT NULL,
+data_start DATE CONSTRAINT data_start_nn NOT NULL,
+data_final DATE CONSTRAINT data_final_nn NOT NULL, 
+taxa_participare NUMBER(4,1) CONSTRAINT taxa_nn NOT NULL,
+id_oras NUMBER(5),
+id_tip NUMBER(5),
+CONSTRAINT id_competitie_pk PRIMARY KEY (id_competitie),
+CONSTRAINT id_tip_fk FOREIGN KEY (id_tip) REFERENCES TIP (id_tip),
+CONSTRAINT id_oras_fk FOREIGN KEY (id_oras) REFERENCES ORAS (id_oras),
+CONSTRAINT date_concurs CHECK (data_start<data_final),
+UNIQUE (nume)
+);
+ALTER TABLE competitie
+MODIFY id_oras number(5) NOT NULL;
+ALTER TABLE competitie
+MODIFY id_tip number(5) NOT NULL;
+
+
+CREATE TABLE ISTORIC_SPORTIV
+(
+data_inscriere_club DATE CONSTRAINT data_inscriere_club_nn NOT NULL,
+data_renuntare_la_sport DATE,
+data_rezultate_sportiv DATE CONSTRAINT data_sportiv_rez NOT NULL,
+id_istoric  NUMBER(5),
+id_rezultat  NUMBER(5),
+id_sportiv  NUMBER(5),
+CONSTRAINT pk_istoric_rezultat_sportiv primary key(id_istoric, id_rezultat,id_sportiv),
+CONSTRAINT id_sportivul_fk FOREIGN KEY (id_sportiv) REFERENCES SPORTIV (id_sportiv)
+);
+--după ce am realizat inserările am observat că nu mai este nevoie de două
+--coloane (data_inscriere_club ?i data_renuntare_la_sport) din tabelul 
+--TABLE ISTORIC_SPORTIV. Acestea au fost eliminate
+--după inserările de la exerci?iul 5 cu drop. 
+--(codul se găse?te înainte de comenzile select pentru toate tabelele)
+
+
+
+CREATE TABLE PROBA
+(
+id_proba NUMBER(5),
+nume VARCHAR2(30) CONSTRAINT nume_proba_nn NOT NULL,
+CONSTRAINT id_proba_pk PRIMARY KEY (id_proba),
+UNIQUE (nume)
+);
+
+
+CREATE TABLE REZULTAT
+(
+id_rezultat NUMBER(5),
+id_proba NUMBER(5),
+loc_clasament NUMBER(4) CONSTRAINT loc_cls_nn NOT NULL,
+timp_obtinut NUMBER(5) CONSTRAINT timp_nn NOT NULL,--IN SECUNDE
+id_sportiv NUMBER(5),
+id_istoric NUMBER(5),
+CONSTRAINT pk_rezultat PRIMARY KEY(id_rezultat),
+CONSTRAINT fk_istoric_rezultat_sportiv FOREIGN KEY(id_istoric, id_rezultat,id_sportiv) REFERENCES ISTORIC_SPORTIV (id_istoric, id_rezultat,id_sportiv),
+CONSTRAINT fk_proba FOREIGN KEY(id_proba) REFERENCES PROBA(id_proba)
+);
+
+
+CREATE TABLE PARTICIPA
+(
+id_sportiv NUMBER(5),
+id_competitie NUMBER(5),
+id_proba NUMBER(5),
+medaliat NUMBER(1) CONSTRAINT medalie_nn NOT NULL,
+CONSTRAINT medaliat_da_sau_nu CHECK (medaliat IN (1,0)),
+CONSTRAINT pk_sportiv_rezultat_sportiv PRIMARY KEY (id_sportiv,id_competitie,id_proba),
+CONSTRAINT id_sportivi_fk FOREIGN KEY (id_sportiv) REFERENCES SPORTIV (id_sportiv),
+CONSTRAINT id_compet_fk FOREIGN KEY (id_competitie) REFERENCES COMPETITIE(id_competitie),
+CONSTRAINT id_probele_fk FOREIGN KEY (id_proba) REFERENCES PROBA (id_proba)
+);
+
+
+SELECT * FROM CLUB;
+CREATE SEQUENCE SEQ_CLUB_MPO
+INCREMENT BY 10
+START WITH 70
+MAXVALUE 10000
+NOCYCLE;
+
+INSERT INTO CLUB
+VALUES(SEQ_CLUB_MPO.NEXTVAL, 'AQUA TEAM');
+
+INSERT INTO CLUB
+VALUES(SEQ_CLUB_MPO.NEXTVAL, 'DELFINUL BUCURESTI');
+
+INSERT INTO CLUB
+VALUES(SEQ_CLUB_MPO.NEXTVAL, 'BUCHAREST SPORT CLUB ELITE');
+
+INSERT INTO CLUB
+VALUES(SEQ_CLUB_MPO.NEXTVAL, 'STEAUA CSA');
+
+INSERT INTO CLUB
+VALUES(SEQ_CLUB_MPO.NEXTVAL, 'ATACK TEAM');
+
+COMMIT;
+rollback;
+
+SELECT *FROM CLUB;
+
+
+
+CREATE SEQUENCE SEQ_ANTRENOR_MPO
+INCREMENT BY 10
+START WITH 20
+MAXVALUE 10000
+NOCYCLE;
+
+SELECT *FROM antrenor;
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'BECHERU','CATALIN',TO_DATE('10-09-1981','dd-mm-yyyy'),'M',10,500,70);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'BECHERU','IULIA',TO_DATE('20-12-1984','dd-mm-yyyy'),'F',8,400.54,70);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'ORMENISAN','DANIEL',TO_DATE('09-06-1988','dd-mm-yyyy'),'M',7,300.3,70);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'DRAGULET','DAN',TO_DATE('20-09-1966','dd-mm-yyyy'),'M',20,600.45,80);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'GIURCANEANU','MATEI',TO_DATE('10-09-1963','dd-mm-yyyy'),'M',23,800.5,80);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'GRIGORE','MARIUS',TO_DATE('25-01-1981','dd-mm-yyyy'),'M',20,700.2,90);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'TOMA','ALEXANDRU',TO_DATE('10-11-1991','dd-mm-yyyy'),'M',10,350,90);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'BORDEI','DARIA',TO_DATE('03-09-1976','dd-mm-yyyy'),'F',25,800,100);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'BRAN','IONEL',TO_DATE('10-08-1977','dd-mm-yyyy'),'M',21,650,100);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'FIRANESCU','SANDRA',TO_DATE('24-03-1997','dd-mm-yyyy'),'F',4,300.1,110);
+
+INSERT INTO antrenor(id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+VALUES (SEQ_ANTRENOR_MPO.nextval,'STAN','DENISA',TO_DATE('11-07-1980','dd-mm-yyyy'),'F',6,310,110);
+COMMIT;
+ROLLBACK;
+
+
+
+SELECT*FROM nationalitate;
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (1,'ROMAN');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (2,'SPANIOL');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (3,'FRANCEZ');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (4,'SUEDEZ');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (5,'ARAB');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (6,'UNGUR');
+INSERT INTO nationalitate(id_nationalitate,nume_nationalitate)
+values (7,'ENGLEZ');
+COMMIT;
+
+
+
+select *from sportiv;
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (1,'M','MARINCA','RARES',TO_DATE('26-03-2001','dd-mm-yyyy'),1,'SPORTIV',NULL,20);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (2,'M','POPESCU','ROBERT',TO_DATE('21-11-2002','dd-mm-yyyy'),1,'SPORTIV LOT',200,30);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (3,'F','STANCA','IULIA',TO_DATE('28-03-2001','dd-mm-yyyy'),2,'SPORTIV',NULL,40);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (4,'F','BELLU','SARA',TO_DATE('16-08-2000','dd-mm-yyyy'),3,'SPORTIV LOT',300,50);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (5,'M','GROFF','PHILIPPE',TO_DATE('10-03-1999','dd-mm-yyyy'),4,'SPORTIV LOT',500,60);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (6,'M','AHMAD','ZAHED',TO_DATE('22-09-2007','dd-mm-yyyy'),5,'SPORTIV',NULL,70);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (7,'F','BLEJAN','ALEXANDRA',TO_DATE('12-05-2006','dd-mm-yyyy'),1,'SPORTIV',NULL,80);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (8,'F','BUZEA','ANA',TO_DATE('21-07-2001','dd-mm-yyyy'),1,'SPORTIV LOT',600.5,90);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (9,'M','COSTROJ','ANTONIO',TO_DATE('19-07-2002','dd-mm-yyyy'),1,'SPORTIV',NULL,100);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (10,'M','MANAFI','ZOLDA',TO_DATE('20-02-1998','dd-mm-yyyy'),6,'SPORTIV',NULL,110);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (11,'F','PANA','BIANCA',TO_DATE('21-02-1990','dd-mm-yyyy'),1,'SPORTIV LOT',600.5,120);
+
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (12,'M','SIMION','ANDREI',TO_DATE('20-10-1998','dd-mm-yyyy'),1,'SPORTIV LOT',800,30);
+COMMIT;
+
+
+
+INSERT INTO SPONSOR(id_sponsor,nume,suma_contributie)
+values (1,'RED BULL',500.5);
+
+INSERT INTO SPONSOR(id_sponsor,nume,suma_contributie)
+values (2,'ISOSTAR',600.4);
+
+INSERT INTO SPONSOR(id_sponsor,nume,suma_contributie)
+values (3,'INFINITY TROPHY',550.1);
+
+INSERT INTO SPONSOR(id_sponsor,nume,suma_contributie)
+values (4,'CARREFOUR',800.7);
+
+INSERT INTO SPONSOR(id_sponsor,nume,suma_contributie)
+values (5,'ENEL',1000.9);
+
+SELECT *FROM SPONSOR;
+
+COMMIT;
+
+
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(1,1,to_date('13-05-2019','dd-mm-yyyy'),to_date('13-06-2023','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(1,2,to_date('25-09-2020','dd-mm-yyyy'),to_date('25-10-2024','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(2,1,to_date('12-05-2018','dd-mm-yyyy'),to_date('16-06-2021','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(2,11,to_date('30-04-2010','dd-mm-yyyy'),to_date('31-05-2020','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(3,4,to_date('29-03-2019','dd-mm-yyyy'),to_date('30-03-2024','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(3,5,to_date('26-08-2020','dd-mm-yyyy'),to_date('27-08-2022','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(4,11,to_date('30-03-2010','dd-mm-yyyy'),to_date('30-04-2021','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(4,2,to_date('13-05-2021','dd-mm-yyyy'),to_date('13-09-2022','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(4,6,to_date('21-08-2017','dd-mm-yyyy'),to_date('21-09-2018','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(5,11,to_date('21-04-2018','dd-mm-yyyy'),to_date('21-05-2022','dd-mm-yyyy'));
+
+INSERT INTO SPONSORIZEAZA(id_sponsor,id_sportiv,inceput_colaborare,sfarsit_colaborare)
+values(4,6,to_date('25-09-2018','dd-mm-yyyy'),to_date('27-09-2019','dd-mm-yyyy'));
+COMMIT;
+SELECT *FROM sponsorizeaza;
+select *from sportiv;
+
+
+
+select* from tip;
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(1,'LOCAL');
+
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(2,'MUNICIPAL');
+
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(3,'JUDETEAN');
+
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(4,'EUROPEAN');
+
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(5,'BALCANIC');
+
+INSERT INTO TIP(id_tip, tip_competitie)
+VALUES(6,'MONDIAL');
+COMMIT;
+
+
+
+SELECT* FROM TARA;
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('RO','ROMANIA');
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('PO','POLONIA');
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('FR','FRANTA');
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('JP','JAPONIA');
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('IT','ITALIA');
+
+INSERT INTO TARA(id_tara,nume_tara)
+values('KO','KOREA');
+COMMIT;
+
+
+
+SELECT *FROM ORAS;
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (1,'BUCURESTI','RO');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (2,'CRAIOVA','RO');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (3,'LUBLIN','PO');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (4,'PARIS','FR');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (5,'KYOTO','JP');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (6,'NAPOLI','IT');
+
+INSERT INTO ORAS(id_oras,nume_oras,id_tara)
+VALUES (7,'GWANGJU','KO');
+COMMIT;
+
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(1,'CUPA DE TOAMNA 2016',TO_DATE('05-11-2016','DD-MM-YYYY'),TO_DATE('06-11-2016','DD-MM-YYYY'),100,1,1);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(2,'CUPA JAKED 2016',TO_DATE('21-05-2016','DD-MM-YYYY'),TO_DATE('22-05-2016','DD-MM-YYYY'),200,2,2);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(3,'CUPA ANDREI NICOLESCU EDITIA 1',TO_DATE('15-10-2017','DD-MM-YYYY'),TO_DATE('16-10-2017','DD-MM-YYYY'),400.5,6,4);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(4,'CUPA DE IARNA 2018',TO_DATE('22-11-2018','DD-MM-YYYY'),TO_DATE('03-12-2018','DD-MM-YYYY'),300,2,3);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(5,'WORLD AQUATICS CHAMPIONSHIP 1',TO_DATE('12-07-2019','DD-MM-YYYY'),TO_DATE('28-07-2019','DD-MM-YYYY'),900.5,7,6);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(6,'EUROPEAN GAMES 2021',TO_DATE('23-06-2021','DD-MM-YYYY'),TO_DATE('27-06-2021','DD-MM-YYYY'),700,5,4);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(7,'JUNIOR CHAMPIONSHIP 2021',TO_DATE('31-07-2021','DD-MM-YYYY'),TO_DATE('10-08-2021','DD-MM-YYYY'),890,3,4);
+
+INSERT INTO COMPETITIE(id_competitie,nume,data_start,data_final,taxa_participare,id_oras,id_tip)
+values(8,'FINA SWIMMING WORLD CUP 2021',TO_DATE('20-08-2021','DD-MM-YYYY'),TO_DATE('24-08-2021','DD-MM-YYYY'),500,4,6);
+
+COMMIT;
+SELECT*FROM COMPETITIE;
+
+
+
+SELECT*
+FROM PROBA;
+INSERT INTO PROBA(id_proba,nume)
+values(1,'50 LIBER');
+
+INSERT INTO PROBA(id_proba,nume)
+values(2,'50 SPATE');
+
+INSERT INTO PROBA(id_proba,nume)
+values(3,'100 LIBER');
+
+INSERT INTO PROBA(id_proba,nume)
+values(4,'200 BRAS');
+
+INSERT INTO PROBA(id_proba,nume)
+values(5,'200 FLUTURE');
+
+INSERT INTO PROBA(id_proba,nume)
+values(6,'400 LIBER');
+COMMIT;
+
+
+
+SELECT *
+FROM PARTICIPA;
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(1,1,1,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(1,4,3,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(2,4,5,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(2,1,1,1);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(5,5,6,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(6,1,2,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(7,1,1,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(8,5,4,1);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(11,2,2,0);
+
+INSERT INTO PARTICIPA(id_sportiv,id_competitie,id_proba,medaliat)
+values(11,3,5,1);
+commit;
+
+
+
+select *FROM ISTORIC_SPORTIV;
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('01-01-2006','DD-MM-YYYY'),NULL,TO_DATE('05-11-2016','DD-MM-YYYY'),1,1,1);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('01-01-2006','DD-MM-YYYY'),NULL,TO_DATE('25-11-2018','DD-MM-YYYY'),1,2,1);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('21-11-2007','DD-MM-YYYY'),NULL,TO_DATE('26-11-2018','DD-MM-YYYY'),2,3,2);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('21-11-2007','DD-MM-YYYY'),NULL,TO_DATE('05-11-2016','DD-MM-YYYY'),2,4,2);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('22-03-2008','DD-MM-YYYY'),NULL,TO_DATE('14-07-2019','DD-MM-YYYY'),5,5,5);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('21-11-2011','DD-MM-YYYY'),TO_DATE('14-08-2020','DD-MM-YYYY'),TO_DATE('06-11-2016','DD-MM-YYYY'),6,7,6);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('14-05-2012','DD-MM-YYYY'),NULL,TO_DATE('05-11-2016','DD-MM-YYYY'),7,10,7);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('19-08-2007','DD-MM-YYYY'),NULL,TO_DATE('14-07-2019','DD-MM-YYYY'),8,8,8);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('22-11-1997','DD-MM-YYYY'),NULL,TO_DATE('21-05-2016','DD-MM-YYYY'),11,6,11);
+
+INSERT INTO ISTORIC_SPORTIV(data_inscriere_club,data_renuntare_la_sport,data_rezultate_sportiv,id_istoric,id_rezultat,id_sportiv)
+values(TO_DATE('22-11-1997','DD-MM-YYYY'),NULL,TO_DATE('15-10-2017','DD-MM-YYYY'),11,9,11);
+COMMIT;
+
+
+
+select*from rezultat;
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(1,1,4,30,1,1);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(2,3,10,70,1,1);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(3,5,9,180,2,2);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(4,1,2,26,2,2);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(5,6,20,420,5,5);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(6,2,8,43,11,11);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(7,2,60,70,6,6);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(8,4,3,170,8,8);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(9,5,3,175,11,11);
+
+INSERT INTO REZULTAT(id_rezultat,id_proba,loc_clasament,timp_obtinut,id_sportiv,id_istoric)
+VALUES(10,1,100,62,7,7);
+COMMIT;
+
+ALTER TABLE ISTORIC_SPORTIV
+DROP COLUMN data_inscriere_club;
+
+ALTER TABLE ISTORIC_SPORTIV
+DROP COLUMN data_renuntare_la_sport;
+
+SELECT * FROM CLUB;
+SELECT * FROM ANTRENOR;
+SELECT * FROM SPORTIV;
+SELECT * FROM NATIONALITATE;
+SELECT * FROM SPONSOR;
+SELECT * FROM SPONSORIZEAZA;
+SELECT * FROM ISTORIC_SPORTIV;
+SELECT * FROM PARTICIPA;
+SELECT * FROM COMPETITIE;
+SELECT * FROM TIP;
+SELECT * FROM ORAS;
+SELECT * FROM TARA;
+SELECT * FROM PROBA;
+SELECT * FROM REZULTAT;
+
+
+--6.
+/*
+ CERINTA: Sa se afiseze pentru fiecare sportiv (care nu face parte din lot; 
+nu se iau in considerare sportivii care nu au participat la nicio competitie) 
+din clubul AQUA TEAM si Bucharest Sport Club Elite 
+numele competitiilor la care a participat si care au avut loc cel mult acum 6 ani.
+Sa se mentina in colectii separate pentru fiecare club: numele competitiei,numele,prenumele sportivilor
+(avand in vedere indicatiile de mai sus) si taxa de participare la acea competitie.
+Mai mult, se doreste sa se afle cat a cheltuit fiecare club in parte pentru participarea 
+sportivilor (care nu fac parte din lot, plus mentiunile de mai sus) la aceste competitii.
+*/
+----------------------------------
+--REZOLVAREA
+/*
+ Pasii rezolvarii:
+ In tipul de date record se vor pune informatiile cerute.
+ Se vor construi un tablou indexat, respectiv unul imbricat pentru a tine informatiile separat pentru cele doua cluburi
+ Se face join intre 5 tabele pentru a lua informatiile necesare 
+ Datele vor fi pastrate in tablourile precizate mai sus
+ Se parcurg tablourile si se afiseaza mesajele cerute si totdata se calculeaza
+ cat a cheltuit fiecare club in parte pentru participarea sportivilor care nu sunt in lot) la competitiile respective.
+*/
+
+/
+
+--------
+create or replace procedure competitie_cheltuiala_2
+is
+TYPE tip_record IS RECORD
+(nume_comp COMPETITIE.NUME%TYPE,
+nume_sp SPORTIV.NUME%TYPE,
+prenume_sp SPORTIV.PRENUME%TYPE,
+taxa COMPETITIE.TAXA_PARTICIPARE%TYPE,
+id_sp SPORTIV.ID_SPORTIV%TYPE);
+type tablou_indexat is table of tip_record index by pls_integer;
+type tablou_imbricat is table of tip_record;
+t_indexat_aq tablou_indexat;
+t_imbricat_bsc tablou_imbricat:= tablou_imbricat();
+
+suma_bsc number:=0;
+suma_aq number:=0;
+begin
+SELECT distinct(COMPETITIE.NUME),SPORTIV.NUME,SPORTIV.PRENUME,COMPETITIE.TAXA_PARTICIPARE,SPORTIV.ID_SPORTIV
+bulk collect INTO t_indexat_aq
+FROM SPORTIV
+JOIN ANTRENOR ON SPORTIV.ID_ANTRENOR = ANTRENOR.ID_ANTRENOR
+JOIN CLUB ON ANTRENOR.ID_CLUB = CLUB.ID_CLUB
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+WHERE NUME_CLUB = 'AQUA TEAM'
+AND TIP_SPORTIV <> 'SPORTIV LOT'
+AND MONTHS_BETWEEN(sysdate,COMPETITIE.DATA_FINAL)<=72
+order by sportiv.id_sportiv;--6 ANI
+
+SELECT distinct(COMPETITIE.NUME),SPORTIV.NUME,SPORTIV.PRENUME,COMPETITIE.TAXA_PARTICIPARE,SPORTIV.ID_SPORTIV
+bulk collect INTO t_imbricat_bsc
+FROM SPORTIV
+JOIN ANTRENOR ON SPORTIV.ID_ANTRENOR = ANTRENOR.ID_ANTRENOR
+JOIN CLUB ON ANTRENOR.ID_CLUB = CLUB.ID_CLUB
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+WHERE NUME_CLUB ='BUCHAREST SPORT CLUB ELITE'
+AND TIP_SPORTIV <> 'SPORTIV LOT'
+AND MONTHS_BETWEEN(sysdate,COMPETITIE.DATA_FINAL)<=72 --6 ANI
+order by sportiv.id_sportiv;
+
+DBMS_OUTPUT.PUT_LINE('CLUBUL AQUA TEAM');
+DBMS_OUTPUT.NEW_LINE();
+if t_indexat_aq.count >0 then
+for i in t_indexat_aq.FIRST..t_indexat_aq.LAST LOOP
+if t_indexat_aq.exists(i) then
+suma_aq:=suma_aq+t_indexat_aq(i).taxa;
+if i = t_indexat_aq.FIRST then
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_sp||' '||t_indexat_aq(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+
+end if;
+if i>=t_indexat_aq.FIRST+1  and t_indexat_aq(i).id_sp <> t_indexat_aq(i-1).id_sp
+then 
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_sp||' '||t_indexat_aq(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+elsif i>=t_indexat_aq.FIRST+1  and t_indexat_aq(i).id_sp = t_indexat_aq(i-1).id_sp
+then
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+
+end if;
+end if;
+END LOOP;
+end if;
+DBMS_OUTPUT.NEW_LINE();
+
+DBMS_OUTPUT.PUT_LINE('Clubul AQUA TEAM a cheltuit: '||suma_aq||' lei');
+
+DBMS_OUTPUT.NEW_LINE();
+
+DBMS_OUTPUT.PUT_LINE('CLUBUL BUCHAREST SPORT CLUB ELITE');
+DBMS_OUTPUT.NEW_LINE();
+if t_imbricat_bsc.count>0 then
+
+for i in t_imbricat_bsc.FIRST..t_imbricat_bsc.LAST LOOP
+if t_imbricat_bsc.exists(i) then
+suma_bsc:=suma_bsc+t_imbricat_bsc(i).taxa;
+
+if i = t_imbricat_bsc.FIRST then --primul rand din colectie
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_sp||' '||t_imbricat_bsc(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+
+end if;
+if i>=t_imbricat_bsc.FIRST+1  and t_imbricat_bsc(i).id_sp <> t_imbricat_bsc(i-1).id_sp --restul randurilor (daca am trecut la un alt sportiv)
+then 
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_sp||' '||t_imbricat_bsc(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+elsif i>=t_imbricat_bsc.FIRST+1  and t_imbricat_bsc(i).id_sp = t_imbricat_bsc(i-1).id_sp
+then
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+
+end if;
+end if;
+END LOOP;
+end if;
+DBMS_OUTPUT.NEW_LINE();
+
+
+DBMS_OUTPUT.PUT_LINE('Clubul BUCHAREST SPORT CLUB ELITE a cheltuit: '||suma_bsc||' lei');
+
+end;
+/
+begin
+competitie_cheltuiala_2;
+end;
+/
+---------------------------------------------------------------------------------------------------------
+--7.
+/*
+ CERINTA:
+ Pentru fiecare club care are cel putin un antrenor care la randul sau are cel putin un sportiv care este sponsorizat 
+in prezent si care a fost medaliat la cel putin o competitie 
+sa se afiseze numele clubului si sa se obtina lista antrenorilor (nume,prenume,salariu) care lucreaza in clubul respectiv.
+Mai mult, sa se realizeze un numar de ordine pentru fiecare antrenor care se va reseta pentru fiecare club care respecta 
+cerintele.
+Pentru fiecare club care indeplineste conditia sa se afiseze numarul de antrenori,
+valoarea lunara a veniturilor antrenorilor, valoarea medie a veniturilor antrenorilor
+A se tine cont de faptul ca un club trebuie sa aiba cel putin un antrenor.
+*/
+----------------------
+--REZOLVARE (ciclu cursor cu subcerere)
+/*
+Pasii rezolvarii
+Pentru a obtine cluburile cerute s-au facut doi pasi:
+1. S-a vazut pentru ce antrenori (id_antrenor) sportivii antrenati de acestia sunt sponsorizati si in data curenta 
+   si au si cel putin o medalie. Astfel s-au facut join-uri intre 4 tabele.
+2. S-a selectat numele clubului si id-ul pentru cluburile care au id_urile antrenorilor descoperite la primul pas
+   pentru aceasta s-a facut un join intre 2 tabele (club_mpo si antrenor_mpo)
+ se parcurge cursorul in care se afla date despre cluburile care indeplinesc conditia 
+ se afiseaza numele
+ si se parcurge cursorul in care se afla date despre toti antrenorii cluburilor care indeplinesc conditia
+ se afiseaza numele acestora, se calculeaza veniturile lunare si medii, dar si numarul de antrenori din clubul respectiv
+ si se afiseaza.
+*/
+-------------------------------------
+create or replace procedure club_antr_sp
+is
+
+i number;
+venit_lunar number;
+BEGIN
+    for v_club in (select club.nume_club, club.id_club
+                   from club
+                    join antrenor on club.id_club = antrenor.id_club
+                    where antrenor.id_antrenor in ( select antrenor.id_antrenor
+                                                       from antrenor
+                                    join sportiv on antrenor.id_antrenor= sportiv.id_antrenor
+                                    join sponsorizeaza on sportiv.id_sportiv = sponsorizeaza.id_sportiv
+                                    join participa on sportiv.id_sportiv = participa.id_sportiv
+where sponsorizeaza.inceput_colaborare <=sysdate and sponsorizeaza.sfarsit_colaborare>=sysdate and medaliat=1
+group by antrenor.id_antrenor)
+                    )
+    loop
+        DBMS_OUTPUT.NEW_LINE;
+        DBMS_OUTPUT.PUT_LINE('Clubul '||v_club.nume_club);
+        DBMS_OUTPUT.PUT_LINE('-----------------------------------------------------------------------------------');
+        i:=0;
+        venit_lunar:=0;
+        for v_antr in ( select nume,prenume,salariu
+                    from antrenor
+                    where id_club = v_club.id_club
+                    )
+        loop
+            i:=i+1;
+            venit_lunar:=venit_lunar+ v_antr.salariu;
+            DBMS_OUTPUT.PUT_LINE(i||'. '||v_antr.nume||' '||v_antr.prenume);
+        end loop;
+            DBMS_OUTPUT.NEW_LINE;
+            DBMS_OUTPUT.PUT_LINE('Numarul antrenorilor este de: '||i);
+            DBMS_OUTPUT.PUT_LINE('Valoarea lunara a veniturilor antrenorilor este de: '||venit_lunar);
+            if i<>0 then
+            DBMS_OUTPUT.PUT_LINE('Valoarea medie a veniturilor antrenorilor este de: '||venit_lunar/i);
+            end if;
+           
+    end loop;
+    
+end;
+/
+begin
+club_antr_sp;
+end;
+/
+            
+--
+--8.
+/*CERINTA:
+ Pentru o competitie al carei nume este dat ca parametru sa se afieseze numele ei si
+sa se determine cat la suta din numarul de sportivi participanti 
+sunt cei care nu fac parte din lot. Tratati cazul in care competitia data ca parametru nu exista ,
+respectiv cazul in care competitia exista, dar nu are niciun participant.
+ 
+NOTA: Nu trebuie tratat cazul in care exista mai multe competitii cu acelasi nume pentru ca, in momentul 
+      crearii tabelului s-a pus constrangerea de UNIQUE(nume).
+*/
+--------------------------------
+--REZOLVAREA
+/*
+Pasii rezolvarii
+
+ Se afiseaza numele competitiei
+ In cazul in care competita are un id printre cele din tabela COMPETITIE atunci, competitia exista, 
+altfel intoarce eroare NO_DATA_FOUND
+ Se numara cati sportivi au participat la competita cu numele dat
+cu un join pe 2 tabele
+ Daca numarul aflat este diferit de 0 se va afla numarul sportivilor care nu fac parte din lot si participa la acea competite
+cu un join pe 3 tabele
+ Se returneaza procentul dorit
+ Altfel, daca numarul este egal cu zero se va arunca o eroare
+*/
+------------------------------
+
+CREATE OR REPLACE FUNCTION NR_SPORTIVI_NU_LOT_COMP(V_NUME COMPETITIE.NUME%TYPE)
+RETURN NUMBER
+IS
+V_ID_COMP COMPETITIE.ID_COMPETITIE%TYPE;
+V_ID_C COMPETITIE.ID_COMPETITIE%TYPE;
+V_NR_TOTAL_SP NUMBER;
+V_NR_SP_NU_LOT NUMBER;
+NU_PARTICIPANTI EXCEPTION;
+BEGIN
+DBMS_OUTPUT.PUT_LINE(V_NUME);
+SELECT ID_COMPETITIE
+INTO V_ID_COMP
+FROM COMPETITIE
+WHERE COMPETITIE.NUME = V_NUME; --NO DATA FOUND CAND INTRODUC UN NUME CARE NU EXISTA
+
+SELECT COUNT(competitie.id_competitie)--INTOARCE 0 PENTRU COMPETITIILE CARE EXISTA DAR CARE NU AU PARTICIPANTI
+INTO V_NR_TOTAL_SP
+FROM COMPETITIE
+FULL OUTER JOIN PARTICIPA ON COMPETITIE.ID_COMPETITIE= PARTICIPA.ID_COMPETITIE
+WHERE ID_SPORTIV IS NOT NULL AND competitie.id_competitie= V_ID_COMP;
+
+IF V_NR_TOTAL_SP <>0 THEN
+
+SELECT COUNT(COMPETITIE.ID_COMPETITIE)
+INTO V_NR_SP_NU_LOT
+FROM COMPETITIE
+FULL OUTER JOIN PARTICIPA ON COMPETITIE.ID_COMPETITIE= PARTICIPA.ID_COMPETITIE
+JOIN SPORTIV ON PARTICIPA.ID_SPORTIV= SPORTIV.ID_SPORTIV
+WHERE SPORTIV.TIP_SPORTIV <> 'SPORTIV LOT' AND PARTICIPA.ID_SPORTIV IS NOT NULL 
+      AND competitie.id_competitie= V_ID_COMP;
+
+RETURN (V_NR_SP_NU_LOT*100)/v_nr_total_sp;
+ELSE
+RAISE NU_PARTICIPANTI;
+
+END IF;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN 
+RAISE_APPLICATION_ERROR(-20000,'Nu exista nicio competite cu numele dat.');
+WHEN NU_PARTICIPANTI THEN
+RAISE_APPLICATION_ERROR(-20001,'Aceasta competite nu are participanti');
+WHEN OTHERS THEN 
+RAISE_APPLICATION_ERROR(-20002,'Alta eroare');
+END;
+/
+BEGIN
+
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('CUPA DE TOAMNA 2016')||'%');  --75%(4 sportivi,3 nu din lot) 
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('CUPA JAKED 2016')||'%'); -- 0% (1 sportiv, 0 nu din lot)
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('CUPA DE IARNA 2018')||'%'); --50% (2 sportivi, 1 nu din lot)
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('WORLD AQUATICS CHAMPIONSHIP 1')||'%'); -- 0% (2 sportivi, 
+                                                                                                            --0 nu din lot)
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('EUROPEAN GAMES 2021')||'%'); -- nu are participanti
+DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||NR_SPORTIVI_NU_LOT_COMP('FINA SWIMMING 2022')||'%'); --nu exista competitia
+EXCEPTION
+WHEN OTHERS THEN 
+DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM); 
+END;
+/
+--------------
+--EX 9.
+/*CERINTA:
+    Pentru un sportiv al carui nume este dat ca parametru sa se afiseze numele competitiilor la care a participat in Romania
+ care incep primavara sau toamna si in cadrul carora a participat la probe scurte (50 m sau 100 m) , numele probei,
+ dar si locul obtinut in clasament.
+    Mai mult,ca cerinta suplimentara, pentru acest sportiv (dar acum se tine cont de toate competitiile la care a participat)
+ se doreste sa se afle in perioada caror sponsorizari acesta nu a reusit sa obtina nicio
+ medalie sau acesta nu a participat la nicio competitie. Sa se afiseze intervalul de sponsorizare, numele sponsorului si
+ un mesaj corespunzator pentru cazul in care nu a participat la nicio competitie in acel interval,respectiv ca nu 
+ a obtinut nicio medalie.
+ Sa se trateze cazurile in care sportivul cu numele dat nu exista, cat si cazul in care sunt mai multi sportivi au acelasi 
+ nume (pentru a obtine aceasta eroare doar pentru acest exercitiu se va insera un sportiv cu numele: BELLU SARA iar dupa 
+ rulare se va da ROLLBACK).
+*/
+---------------------------
+--REZOLVAREA
+
+/*
+PASII REZOLVARII:
+
+1. Pentru a obtine informatiile cerute in primul paragraf se va face un join pe 8 tabele 
+   (se va face join si cu istoricul sportivului deoarece acolo se trece mai intai id-ul rezultatului)
+   De asemenea, joinul cu tabelul REZULTAT se face dupa 3 coloane: id_proba, id_sportiv si id_rezultat
+   Se pun conditiile in where pentru a obtine competitiile dorite
+   Datele din select sunt tinute intr-un tablou indexat
+   In cazul in care tabloul indexat nu va avea valori inserate se va afisa un mesaj corespunzator
+   
+   
+2. Pentru rezolvarea celui de-al doilea paragraf se vor folosi doua tabele indexate. In unul din ele vor fi stocate
+   date cu privire la intervalele de sponsorizare ale sportivului si numele sponsorului (join intre 3 tabele),
+   iar in celalalt date cu privire la intervalul de desfasurare al competitiei si daca sportivul a fost sau nu medaliat.
+   
+   Pentru a verifica daca in intervalul de sponsorizare sportivul nu a obtinut nicio medalie sau nu a participat la niciun
+   concurs se va parcurge mai intai tabloul indexat pentru sponsorizari, si pentru fiecare sponsorizare se va parcurge 
+   tabloul indexat pentru competitii. Se va calcula numarul de competitii la care a participat sportivul pe parcursul unui
+   interval de sponsorizare, iar apoi se va verifica la cate din competitii a fost medaliat.
+   
+   Daca sportivul nu a participat la nicio competitie in intervalul sponsorizarii respective se va afisa un mesaj,
+   iar daca nu a fost deloc medaliat se va afisa un mesaj corespunzator.
+   
+   Mai mult, daca sportivul nu a fost niciodata sponsorizat se va afisa un mesaj, 
+   la fel si pentru cazul in care nu a participat niciodata la o competitie.
+   
+3. Exceptiile NO_DATA_FOUND si TOO_MANY_ROWS vor fi tratate in blocul exception
+ 
+*/
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (13,'F','BELLU','SARA',TO_DATE('16-10-2001','dd-mm-yyyy'),1,'SPORTIV LOT',301,50);
+ROLLBACK;
+/
+create or replace procedure sportiv_competitii_sponsor(v_nume_sp SPORTIV.NUME%TYPE,v_pren_sp SPORTIV.PRENUME%TYPE)
+is
+
+v_id SPORTIV.ID_SPORTIV%TYPE;
+
+TYPE tip_record_cpr IS RECORD
+(nume_comp COMPETITIE.NUME%TYPE,
+nume_proba PROBA.NUME%TYPE,
+loc_clasam REZULTAT.LOC_CLASAMENT%TYPE);
+
+type tablou_indexat_cpr is table of tip_record_cpr index by pls_integer;
+t_indexat_cpr tablou_indexat_cpr;
+
+--pentru partea a doua a exercitiului
+TYPE tip_record_spons IS RECORD
+(spons_inc SPONSORIZEAZA.INCEPUT_COLABORARE%TYPE,
+spons_sf SPONSORIZEAZA.SFARSIT_COLABORARE%TYPE,
+spons_nume SPONSOR.NUME%TYPE);
+
+TYPE tip_record_comp IS RECORD
+(medalie PARTICIPA.MEDALIAT%TYPE,
+comp_inc COMPETITIE.DATA_START%TYPE,
+comp_sf COMPETITIE.DATA_FINAL%TYPE);
+
+type tablou_indexat is table of tip_record_spons index by pls_integer;
+t_indexat_sponsor tablou_indexat;
+
+type tablou_indexat_comp is TABLE OF tip_record_comp index by pls_integer;
+t_indexat_comp tablou_indexat_comp;
+
+nr_medaliati number; 
+numar_comp_int number; --numarul de competitii la care a participat sportivul in intervalul in care a fost sponsorizat
+
+
+BEGIN
+
+SELECT ID_SPORTIV
+INTO v_id
+FROM SPORTIV
+WHERE NUME = v_nume_sp AND PRENUME = v_pren_sp;
+SELECT competitie.nume,proba.nume,rezultat.loc_clasament 
+BULK COLLECT INTO t_indexat_cpr
+FROM SPORTIV                              --SUNT LUATI IN CONSIDERARE DOAR SPORTIVII CARE PARTICIPA LA COMPETITIILE DIN ROMANIA
+ JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+ JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+ JOIN ORAS ON COMPETITIE.ID_ORAS = ORAS.ID_ORAS
+ JOIN TARA ON ORAS.ID_TARA = TARA.ID_TARA
+ join istoric_sportiv on sportiv.id_sportiv = istoric_sportiv.id_sportiv --mai intai datele sunt trecute in istoric si dupa in rezultat
+ JOIN PROBA ON PARTICIPA.ID_PROBA = PROBA.ID_PROBA
+ JOIN REZULTAT ON PROBA.ID_PROBA = REZULTAT.ID_PROBA 
+                AND SPORTIV.ID_SPORTIV = REZULTAT.ID_SPORTIV 
+                and istoric_sportiv.id_rezultat= rezultat.id_rezultat
+WHERE EXTRACT(MONTH FROM COMPETITIE.DATA_START) IN (3,4,5,9,10,11)
+AND TARA.NUME_TARA = 'ROMANIA'
+AND (PROBA.NUME LIKE '100%' OR  PROBA.NUME LIKE '50%')
+and SPORTIV.ID_SPORTIV=v_id;
+
+IF t_indexat_cpr.COUNT <>0 THEN
+for i in t_indexat_cpr.first .. t_indexat_cpr.last
+loop
+dbms_output.put_line(t_indexat_cpr(i).nume_comp||' proba: '||t_indexat_cpr(i).nume_proba||' locul: '||t_indexat_cpr(i).loc_clasam);
+end loop;
+ELSE
+
+DBMS_OUTPUT.PUT_LINE('ACEST SPORTIV NU PARTICIPA LA PROBE SCURTE DIN CADRUL COMPETITIILOR DIN ROMANIA');
+END IF;
+
+
+--partea a doua a exercitiului
+
+select sponsorizeaza.inceput_colaborare,sponsorizeaza.sfarsit_colaborare,SPONSOR.NUME
+BULK COLLECT into t_indexat_sponsor
+from sportiv 
+join sponsorizeaza on sportiv.id_sportiv = sponsorizeaza.id_sportiv
+join sponsor on sponsorizeaza.id_sponsor = sponsor.id_sponsor
+where sportiv.id_sportiv =v_id;
+
+SELECT PARTICIPA.MEDALIAT, COMPETITIE.DATA_START,COMPETITIE.DATA_FINAL
+BULK COLLECT INTO t_indexat_comp
+FROM SPORTIV 
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+where sportiv.id_sportiv =v_id;
+IF t_indexat_sponsor.COUNT <>0 THEN
+for i in t_indexat_sponsor.FIRST..t_indexat_sponsor.LAST
+loop --aici intru pe un interval de sponsorizare
+    IF t_indexat_comp.COUNT <>0 THEN
+    nr_medaliati:=0;
+    numar_comp_int:=0;
+    
+        FOR j IN t_indexat_comp.FIRST..t_indexat_comp.LAST
+        loop
+   
+            if t_indexat_comp(j).comp_inc >= t_indexat_sponsor(i).spons_inc 
+                and t_indexat_comp(j).comp_sf <= t_indexat_sponsor(i).spons_sf
+            then
+                numar_comp_int:=numar_comp_int+1; --numarul de competitii la care a participat sportivul in intervalul in care a fost sponsorizat
+            end if;
+    
+            if t_indexat_comp(j).comp_inc >= t_indexat_sponsor(i).spons_inc 
+                 and t_indexat_comp(j).comp_sf <= t_indexat_sponsor(i).spons_sf
+                and t_indexat_comp(j).medalie =1
+            then
+            nr_medaliati:=nr_medaliati+1;
+    
+             end if;
+         end loop;
+    
+        if numar_comp_int = 0 then
+        DBMS_OUTPUT.PUT_LINE('In intervalul de sponsorizare: '||t_indexat_sponsor(i).spons_inc||' '||t_indexat_sponsor(i).spons_sf||
+        ' cu sponsorul: '||t_indexat_sponsor(i).spons_nume||' sportivul nu a participat la nicio competitie');
+        elsif nr_medaliati = 0 then
+         DBMS_OUTPUT.PUT_LINE('In intervalul de sponsorizare: '||t_indexat_sponsor(i).spons_inc||' '||t_indexat_sponsor(i).spons_sf||
+        ' cu sponsorul: '||t_indexat_sponsor(i).spons_nume||' sportivul nu a reusit sa obtina nicio medalie din '||numar_comp_int||' competitii la care a participat');
+    end if;
+    
+    ELSE
+     DBMS_OUTPUT.PUT_LINE('Sportivul nu a participat la nicio competitie pana acum');
+    END IF;
+    
+end loop;
+ELSE 
+ DBMS_OUTPUT.PUT_LINE('Sportivul nu a fost si nici nu este sponsorizat');
+END IF;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN 
+RAISE_APPLICATION_ERROR(-20000,'NU EXISTA SPORTIVUL');
+WHEN TOO_MANY_ROWS THEN 
+RAISE_APPLICATION_ERROR(-20001,' SUNT MAI MULTI SPORTIVI CU ACELASI NUME');
+
+WHEN OTHERS THEN 
+RAISE_APPLICATION_ERROR(-20002,'ALTA EROARE');
+END;
+/
+
+BEGIN
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE CAT TIMP A FOST SPONSORIZAT : FIE NU A PARTICIPAT LA NICIO COMPETITIE
+--                                                           FIE NU A REUSIT SA OBTINA NICIO MEDALIE
+--sportiv_competitii_sponsor('MARINCA','RARES');
+
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE NU A PARTICIPAT LA NICIO COMPETITIE CAT TIMP A FOST SPOSORIZAT
+--sportiv_competitii_sponsor('POPESCU','ROBERT');
+
+-- EXEMPLU DE SPORTIV CARE NU A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    SI CARE NU A FOST NICIODATA SPONSORIZAT
+--sportiv_competitii_sponsor('STANCA','IULIA');
+
+-- NO_DATA_FOUND EXCEPTION
+--sportiv_competitii_sponsor('MARI','RALUCA'); 
+
+-- TOO_MANY_ROWS EXCEPTION (IN CAZUL IN CARE SE INSEREAZA VALORILE IN TABEL)
+-- In cazul in care s-a eliminat sportiva inserata pentru acest exercitiu (ramanand doar o sportiva cu numele BELLU SARA)
+-- ATUNCI acesta este un exemplu de sportiv care nu participa la competitii in Romania, 
+-- respectiv un exemplu de sportiv care este sponsorizat dar care nu a participat niciodata la o competitie 
+--sportiv_competitii_sponsor('BELLU','SARA'); 
+
+-- EXEMPLU DE SPORTIV CARE NU A PARTICIPAT LA NICIO PROBA SCURTA DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    SI CARE PE PERIOADA SPONSORIZARII NU A PARTICIPAT LA NICIO COMPETITIE
+--sportiv_competitii_sponsor('GROFF','PHILIPPE');
+
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE NU A FOST SPONSORIZAT NICIODATA
+sportiv_competitii_sponsor('BLEJAN','ALEXANDRA'); 
+
+EXCEPTION
+WHEN OTHERS THEN 
+DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM); 
+END;
+/
+
+--10
+/*CERINTA:
+        Creati un trigger la nivel de comanda care sa ii permita administratorul bazei de date ('MIRUNA') sa insereze in
+    tabela Antrenor doar in zilele de 2 ale lunilor (in aceasta zi se dau testele de certificare ca antrenor):
+    ianuarie, martie, iunie, septembrie si decembrie intre orele 8 a.m. si 11 a.m. Mai mult, numarul de antrenori nu poate 
+    sa depaseasca numarul de 600 de persoane deoarece acesta este maximul admis de federatie.
+        In afara acestui program sunt interzise modificarile de catre administrator.
+*/
+/
+CREATE OR REPLACE TRIGGER trigger_antrenor
+BEFORE INSERT 
+ON ANTRENOR
+DECLARE
+v_antrenori number;
+
+BEGIN
+
+    SELECT COUNT(id_antrenor)
+    INTO v_antrenori
+    FROM antrenor;
+    
+    IF (EXTRACT (MONTH FROM SYSDATE) IN (1,3,6,9,12)) AND (TO_CHAR (SYSDATE,'hh24') between 8 and 11) and 
+     user = UPPER('miruna') AND (EXTRACT (DAY FROM SYSDATE))=2  THEN  
+    
+    --conditia de if de mai jos este pentru a face verificari (imi dau permisiunea pentru ziua in care sunt ca sa pot verifica
+    -- conditiile de inserare cand se depasesc 600 de antrenori)
+    --IF (EXTRACT (MONTH FROM SYSDATE) IN (1,3,6,9,12)) AND (TO_CHAR (SYSDATE,'hh24') between 0 and 24) and 
+    --user = UPPER('miruna') AND (EXTRACT (DAY FROM SYSDATE))=23  THEN    
+             
+            IF v_antrenori >=600 then 
+                RAISE_APPLICATION_ERROR(-20003,'S-a atins limita de antrenori care pot fi introdusi');
+                else
+                DBMS_OUTPUT.PUT_LINE('Inserarea a avut loc cu succes'); 
+            end if;
+       
+    ELSE 
+               RAISE_APPLICATION_ERROR(-20001,'Administratorul nu poate insera in tabelul ANTRENOR'); 
+          
+    end if;
+END;
+/
+select*from antrenor;
+DELETE FROM ANTRENOR WHERE NUME = 'nume';
+/
+begin 
+FOR I IN 121..811 LOOP
+    insert into antrenor (id_antrenor,nume,prenume,anul_nasterii,gen,ani_experienta,salariu,id_club)
+    values(I,'nume','prenume',sysdate,'M',1,501,70);
+END LOOP;
+  
+     EXCEPTION
+    WHEN OTHERS THEN 
+    DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM); 
+END;
+
+/
+rollback;
+/
+
+
+------------------------------------------------------------------------
+--11
+--CERINTA:Creati un trigger la nivel de linie care sa nu ii permita unui sponsor sa inceapa colaborarea cu mai mult de 4 sportivi anual.
+/
+CREATE OR REPLACE PACKAGE pachet_sponsorizari
+AS
+    TYPE tip_record IS RECORD
+    (id_sp SPONSORIZEAZA.ID_SPONSOR%TYPE,
+     nr NUMBER(5));
+     
+    TYPE tip_indexat IS TABLE OF tip_record INDEX BY PLS_INTEGER;
+    t tip_indexat;
+    
+    contor NUMBER(2):=0;
+END;
+/
+CREATE OR REPLACE TRIGGER triger_comanda_spnosorizare
+BEFORE INSERT on sponsorizeaza
+BEGIN
+    pachet_sponsorizari.contor:=0;
+    SELECT id_sponsor, count(*)--numarul de sportivi pe care ii sponsorizeaza
+    BULK COLLECT INTO pachet_sponsorizari.t
+    FROM SPONSORIZEAZA
+    WHERE EXTRACT(YEAR FROM INCEPUT_COLABORARE) = EXTRACT(YEAR FROM SYSDATE)
+    GROUP BY ID_SPONSOR;
+END;
+/
+CREATE OR REPLACE TRIGGER triger_linii_spnosorizare
+BEFORE INSERT ON SPONSORIZEAZA
+FOR EACH ROW
+BEGIN
+    FOR i IN 1..pachet_sponsorizari.t.last LOOP
+        IF pachet_sponsorizari.t(i).id_sp = :NEW.id_sponsor
+            AND pachet_sponsorizari.t(i).nr + pachet_sponsorizari.contor =4--daca sponsorizeaza 4
+        THEN 
+        RAISE_APPLICATION_ERROR(-20030,'Sponsorul cu id-ul '||:NEW.id_sponsor||' depaseste numarul maxim de sportivi pe care 
+        ii poate sponsoriza incepand din acest an');
+        END IF;
+    END LOOP;
+    pachet_sponsorizari.contor:=pachet_sponsorizari.contor+1;
+END;
+/
+--TESTARE
+INSERT INTO sponsorizeaza(ID_SPONSOR,ID_SPORTIV,INCEPUT_COLABORARE,SFARSIT_COLABORARE)
+VALUES (1,11,to_date('23-12-2021','dd-mm-yyyy'),to_date('30-04-2024','dd-mm-yyyy'));
+
+INSERT INTO sponsorizeaza(ID_SPONSOR,ID_SPORTIV,INCEPUT_COLABORARE,SFARSIT_COLABORARE)
+VALUES (1,5,to_date('30-10-2021','dd-mm-yyyy'),to_date('25-04-2025','dd-mm-yyyy'));
+
+INSERT INTO sponsorizeaza(ID_SPONSOR,ID_SPORTIV,INCEPUT_COLABORARE,SFARSIT_COLABORARE)
+VALUES (1,4,to_date('23-11-2021','dd-mm-yyyy'),to_date('30-03-2024','dd-mm-yyyy'));
+
+INSERT INTO sponsorizeaza(ID_SPONSOR,ID_SPORTIV,INCEPUT_COLABORARE,SFARSIT_COLABORARE)
+VALUES (1,6,to_date('28-11-2021','dd-mm-yyyy'),to_date('30-06-2023','dd-mm-yyyy'));
+
+--INSERAREA DE JOS DA EROARE
+INSERT INTO sponsorizeaza(ID_SPONSOR,ID_SPORTIV,INCEPUT_COLABORARE,SFARSIT_COLABORARE)
+VALUES (1,3,to_date('28-11-2021','dd-mm-yyyy'),to_date('30-06-2023','dd-mm-yyyy'));
+
+SELECT*FROM SPONSORIZEAZA;
+ROLLBACK;
+
+--12.
+/*CERINTA
+    Sa se creeze un TRIGGER LDD care sa retina utilizatorul,data si actiunile facute de utilizator pe schema.
+    Mai mult, doar administratorul bazei de date ('MIRUNA') poate face modificarile de tip LDD;
+    in zilele de duminica nu se permit modificari la nivelul schemei, pentru ca este zi libera. 
+*/
+/
+CREATE TABLE info_user
+(numele_user VARCHAR2(40),
+ evenimentul VARCHAR2(40),
+ numele_obiect VARCHAR2(40),
+ data_modificare DATE,
+ numele_baza_date VARCHAR2(40)
+ );
+
+/
+CREATE OR REPLACE TRIGGER date_utilizator_modif
+BEFORE CREATE OR DROP OR ALTER
+ON SCHEMA
+BEGIN
+IF TO_CHAR(SYSDATE,'D') = 7 THEN
+    RAISE_APPLICATION_ERROR(-20010,'Duminica nu se lucreaza');
+ELSIF user != UPPER('miruna') THEN
+     RAISE_APPLICATION_ERROR(-20011,'Doar administratorul are dreptul sa creeze,altereze sau sa scoata tabele');
+ELSIF  TO_CHAR(SYSDATE,'D') != 7 AND user = UPPER('miruna') THEN
+    INSERT INTO info_user (numele_user,evenimentul,numele_obiect,data_modificare,numele_baza_date)
+    VALUES  (SYS.LOGIN_USER,SYS.SYSEVENT,SYS.DICTIONARY_OBJ_NAME,SYSDATE,SYS.DATABASE_NAME);
+    DBMS_OUTPUT.PUT_LINE('Comanda realizata cu succes');
+END IF;
+END;
+/
+select * from info_user;
+CREATE TABLE testare_1 (id_test number);
+DROP TABLE testare_1;
+delete from info_user where numele_user = 'MIRUNA';
+---------------------------------------------------------------
+--13
+
+CREATE OR REPLACE PACKAGE pachet_proiect
+IS
+
+    procedure competitie_cheltuiala_2; --EX 6
+    procedure club_antr_sp;--EX 7
+    FUNCTION NR_SPORTIVI_NU_LOT_COMP(V_NUME COMPETITIE.NUME%TYPE)--EX 8
+    RETURN NUMBER;
+    procedure sportiv_competitii_sponsor(v_nume_sp SPORTIV.NUME%TYPE,v_pren_sp SPORTIV.PRENUME%TYPE);--EX 9
+END pachet_proiect;
+/
+CREATE OR REPLACE PACKAGE BODY  pachet_proiect
+IS
+
+procedure competitie_cheltuiala_2
+is
+
+--ex 6
+TYPE tip_record IS RECORD
+(nume_comp COMPETITIE.NUME%TYPE,
+nume_sp SPORTIV.NUME%TYPE,
+prenume_sp SPORTIV.PRENUME%TYPE,
+taxa COMPETITIE.TAXA_PARTICIPARE%TYPE,
+id_sp SPORTIV.ID_SPORTIV%TYPE);
+type tablou_indexat is table of tip_record index by pls_integer;
+type tablou_imbricat is table of tip_record;
+t_indexat_aq tablou_indexat;
+t_imbricat_bsc tablou_imbricat:= tablou_imbricat();
+
+suma_bsc number:=0;
+suma_aq number:=0;
+begin
+SELECT distinct(COMPETITIE.NUME),SPORTIV.NUME,SPORTIV.PRENUME,COMPETITIE.TAXA_PARTICIPARE,SPORTIV.ID_SPORTIV
+bulk collect INTO t_indexat_aq
+FROM SPORTIV
+JOIN ANTRENOR ON SPORTIV.ID_ANTRENOR = ANTRENOR.ID_ANTRENOR
+JOIN CLUB ON ANTRENOR.ID_CLUB = CLUB.ID_CLUB
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+WHERE NUME_CLUB = 'AQUA TEAM'
+AND TIP_SPORTIV <> 'SPORTIV LOT'
+AND MONTHS_BETWEEN(sysdate,COMPETITIE.DATA_FINAL)<=72
+order by sportiv.id_sportiv;--6 ANI
+
+SELECT distinct(COMPETITIE.NUME),SPORTIV.NUME,SPORTIV.PRENUME,COMPETITIE.TAXA_PARTICIPARE,SPORTIV.ID_SPORTIV
+bulk collect INTO t_imbricat_bsc
+FROM SPORTIV
+JOIN ANTRENOR ON SPORTIV.ID_ANTRENOR = ANTRENOR.ID_ANTRENOR
+JOIN CLUB ON ANTRENOR.ID_CLUB = CLUB.ID_CLUB
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+WHERE NUME_CLUB ='BUCHAREST SPORT CLUB ELITE'
+AND TIP_SPORTIV <> 'SPORTIV LOT'
+AND MONTHS_BETWEEN(sysdate,COMPETITIE.DATA_FINAL)<=72 --6 ANI
+order by sportiv.id_sportiv;
+
+DBMS_OUTPUT.PUT_LINE('CLUBUL AQUA TEAM');
+DBMS_OUTPUT.NEW_LINE();
+if t_indexat_aq.count >0 then
+for i in t_indexat_aq.FIRST..t_indexat_aq.LAST LOOP
+if t_indexat_aq.exists(i) then
+suma_aq:=suma_aq+t_indexat_aq(i).taxa;
+if i = t_indexat_aq.FIRST then
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_sp||' '||t_indexat_aq(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+
+end if;
+if i>=t_indexat_aq.FIRST+1  and t_indexat_aq(i).id_sp <> t_indexat_aq(i-1).id_sp
+then 
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_sp||' '||t_indexat_aq(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+elsif i>=t_indexat_aq.FIRST+1  and t_indexat_aq(i).id_sp = t_indexat_aq(i-1).id_sp
+then
+DBMS_OUTPUT.PUT_LINE(t_indexat_aq(i).nume_comp);
+
+end if;
+end if;
+END LOOP;
+end if;
+DBMS_OUTPUT.NEW_LINE();
+
+DBMS_OUTPUT.PUT_LINE('Clubul AQUA TEAM a cheltuit: '||suma_aq||' lei');
+
+DBMS_OUTPUT.NEW_LINE();
+
+DBMS_OUTPUT.PUT_LINE('CLUBUL BUCHAREST SPORT CLUB ELITE');
+DBMS_OUTPUT.NEW_LINE();
+if t_imbricat_bsc.count>0 then
+
+for i in t_imbricat_bsc.FIRST..t_imbricat_bsc.LAST LOOP
+if t_imbricat_bsc.exists(i) then
+suma_bsc:=suma_bsc+t_imbricat_bsc(i).taxa;
+
+if i = t_imbricat_bsc.FIRST then --primul rand din colectie
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_sp||' '||t_imbricat_bsc(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+
+end if;
+if i>=t_imbricat_bsc.FIRST+1  and t_imbricat_bsc(i).id_sp <> t_imbricat_bsc(i-1).id_sp --restul randurilor (daca am trecut la un alt sportiv)
+then 
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_sp||' '||t_imbricat_bsc(i).prenume_sp||' '||'a concurat la competitia: ');
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+elsif i>=t_imbricat_bsc.FIRST+1  and t_imbricat_bsc(i).id_sp = t_imbricat_bsc(i-1).id_sp
+then
+DBMS_OUTPUT.PUT_LINE(t_imbricat_bsc(i).nume_comp);
+
+end if;
+end if;
+END LOOP;
+end if;
+DBMS_OUTPUT.NEW_LINE();
+
+
+DBMS_OUTPUT.PUT_LINE('Clubul BUCHAREST SPORT CLUB ELITE a cheltuit: '||suma_bsc||' lei');
+
+end;
+
+--ex 7
+procedure club_antr_sp
+is
+
+i number;
+venit_lunar number;
+BEGIN
+    for v_club in (select club.nume_club, club.id_club
+                   from club
+                    join antrenor on club.id_club = antrenor.id_club
+                    where antrenor.id_antrenor in ( select antrenor.id_antrenor
+                                                       from antrenor
+                                    join sportiv on antrenor.id_antrenor= sportiv.id_antrenor
+                                    join sponsorizeaza on sportiv.id_sportiv = sponsorizeaza.id_sportiv
+                                    join participa on sportiv.id_sportiv = participa.id_sportiv
+where sponsorizeaza.inceput_colaborare <=sysdate and sponsorizeaza.sfarsit_colaborare>=sysdate and medaliat=1
+group by antrenor.id_antrenor)
+                    )
+    loop
+        DBMS_OUTPUT.NEW_LINE;
+        DBMS_OUTPUT.PUT_LINE('Clubul '||v_club.nume_club);
+        DBMS_OUTPUT.PUT_LINE('-----------------------------------------------------------------------------------');
+        i:=0;
+        venit_lunar:=0;
+        for v_antr in ( select nume,prenume,salariu
+                    from antrenor
+                    where id_club = v_club.id_club
+                    )
+        loop
+            i:=i+1;
+            venit_lunar:=venit_lunar+ v_antr.salariu;
+            DBMS_OUTPUT.PUT_LINE(i||'. '||v_antr.nume||' '||v_antr.prenume);
+        end loop;
+            DBMS_OUTPUT.NEW_LINE;
+            DBMS_OUTPUT.PUT_LINE('Numarul antrenorilor este de: '||i);
+            DBMS_OUTPUT.PUT_LINE('Valoarea lunara a veniturilor antrenorilor este de: '||venit_lunar);
+            if i<>0 then
+            DBMS_OUTPUT.PUT_LINE('Valoarea medie a veniturilor antrenorilor este de: '||venit_lunar/i);
+            end if;
+           
+    end loop;
+    
+end;
+
+--ex 8
+FUNCTION NR_SPORTIVI_NU_LOT_COMP(V_NUME COMPETITIE.NUME%TYPE)
+RETURN NUMBER
+IS
+V_ID_COMP COMPETITIE.ID_COMPETITIE%TYPE;
+V_ID_C COMPETITIE.ID_COMPETITIE%TYPE;
+V_NR_TOTAL_SP NUMBER;
+V_NR_SP_NU_LOT NUMBER;
+NU_PARTICIPANTI EXCEPTION;
+BEGIN
+DBMS_OUTPUT.PUT_LINE(V_NUME);
+SELECT ID_COMPETITIE
+INTO V_ID_COMP
+FROM COMPETITIE
+WHERE COMPETITIE.NUME = V_NUME; --NO DATA FOUND CAND INTRODUC UN NUME CARE NU EXISTA
+
+SELECT COUNT(competitie.id_competitie)--INTOARCE 0 PENTRU COMPETITIILE CARE EXISTA DAR CARE NU AU PARTICIPANTI
+INTO V_NR_TOTAL_SP
+FROM COMPETITIE
+FULL OUTER JOIN PARTICIPA ON COMPETITIE.ID_COMPETITIE= PARTICIPA.ID_COMPETITIE
+WHERE ID_SPORTIV IS NOT NULL AND competitie.id_competitie= V_ID_COMP;
+
+IF V_NR_TOTAL_SP <>0 THEN
+
+SELECT COUNT(COMPETITIE.ID_COMPETITIE)
+INTO V_NR_SP_NU_LOT
+FROM COMPETITIE
+FULL OUTER JOIN PARTICIPA ON COMPETITIE.ID_COMPETITIE= PARTICIPA.ID_COMPETITIE
+JOIN SPORTIV ON PARTICIPA.ID_SPORTIV= SPORTIV.ID_SPORTIV
+WHERE SPORTIV.TIP_SPORTIV <> 'SPORTIV LOT' AND PARTICIPA.ID_SPORTIV IS NOT NULL 
+      AND competitie.id_competitie= V_ID_COMP;
+
+RETURN (V_NR_SP_NU_LOT*100)/v_nr_total_sp;
+ELSE
+RAISE NU_PARTICIPANTI;
+
+END IF;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN 
+RAISE_APPLICATION_ERROR(-20000,'Nu exista nicio competite cu numele dat.');
+WHEN NU_PARTICIPANTI THEN
+RAISE_APPLICATION_ERROR(-20001,'Aceasta competite nu are participanti');
+WHEN OTHERS THEN 
+RAISE_APPLICATION_ERROR(-20002,'Alta eroare');
+END;
+
+--ex 9
+procedure sportiv_competitii_sponsor(v_nume_sp SPORTIV.NUME%TYPE,v_pren_sp SPORTIV.PRENUME%TYPE)
+is
+
+v_id SPORTIV.ID_SPORTIV%TYPE;
+
+TYPE tip_record_cpr IS RECORD
+(nume_comp COMPETITIE.NUME%TYPE,
+nume_proba PROBA.NUME%TYPE,
+loc_clasam REZULTAT.LOC_CLASAMENT%TYPE);
+
+type tablou_indexat_cpr is table of tip_record_cpr index by pls_integer;
+t_indexat_cpr tablou_indexat_cpr;
+
+--pentru partea a doua a exercitiului
+TYPE tip_record_spons IS RECORD
+(spons_inc SPONSORIZEAZA.INCEPUT_COLABORARE%TYPE,
+spons_sf SPONSORIZEAZA.SFARSIT_COLABORARE%TYPE,
+spons_nume SPONSOR.NUME%TYPE);
+
+TYPE tip_record_comp IS RECORD
+(medalie PARTICIPA.MEDALIAT%TYPE,
+comp_inc COMPETITIE.DATA_START%TYPE,
+comp_sf COMPETITIE.DATA_FINAL%TYPE);
+
+type tablou_indexat is table of tip_record_spons index by pls_integer;
+t_indexat_sponsor tablou_indexat;
+
+type tablou_indexat_comp is TABLE OF tip_record_comp index by pls_integer;
+t_indexat_comp tablou_indexat_comp;
+
+nr_medaliati number; 
+numar_comp_int number; --numarul de competitii la care a participat sportivul in intervalul in care a fost sponsorizat
+
+
+BEGIN
+
+SELECT ID_SPORTIV
+INTO v_id
+FROM SPORTIV
+WHERE NUME = v_nume_sp AND PRENUME = v_pren_sp;
+SELECT competitie.nume,proba.nume,rezultat.loc_clasament 
+BULK COLLECT INTO t_indexat_cpr
+FROM SPORTIV                              --SUNT LUATI IN CONSIDERARE DOAR SPORTIVII CARE PARTICIPA LA COMPETITIILE DIN ROMANIA
+ JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+ JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+ JOIN ORAS ON COMPETITIE.ID_ORAS = ORAS.ID_ORAS
+ JOIN TARA ON ORAS.ID_TARA = TARA.ID_TARA
+ join istoric_sportiv on sportiv.id_sportiv = istoric_sportiv.id_sportiv --mai intai datele sunt trecute in istoric si dupa in rezultat
+ JOIN PROBA ON PARTICIPA.ID_PROBA = PROBA.ID_PROBA
+ JOIN REZULTAT ON PROBA.ID_PROBA = REZULTAT.ID_PROBA 
+                AND SPORTIV.ID_SPORTIV = REZULTAT.ID_SPORTIV 
+                and istoric_sportiv.id_rezultat= rezultat.id_rezultat
+WHERE EXTRACT(MONTH FROM COMPETITIE.DATA_START) IN (3,4,5,9,10,11)
+AND TARA.NUME_TARA = 'ROMANIA'
+AND (PROBA.NUME LIKE '100%' OR  PROBA.NUME LIKE '50%')
+and SPORTIV.ID_SPORTIV=v_id;
+
+IF t_indexat_cpr.COUNT <>0 THEN
+for i in t_indexat_cpr.first .. t_indexat_cpr.last
+loop
+dbms_output.put_line(t_indexat_cpr(i).nume_comp||' proba: '||t_indexat_cpr(i).nume_proba||' locul: '||t_indexat_cpr(i).loc_clasam);
+end loop;
+ELSE
+
+DBMS_OUTPUT.PUT_LINE('ACEST SPORTIV NU PARTICIPA LA PROBE SCURTE DIN CADRUL COMPETITIILOR DIN ROMANIA');
+END IF;
+
+
+--partea a doua a exercitiului
+
+select sponsorizeaza.inceput_colaborare,sponsorizeaza.sfarsit_colaborare,SPONSOR.NUME
+BULK COLLECT into t_indexat_sponsor
+from sportiv 
+join sponsorizeaza on sportiv.id_sportiv = sponsorizeaza.id_sportiv
+join sponsor on sponsorizeaza.id_sponsor = sponsor.id_sponsor
+where sportiv.id_sportiv =v_id;
+
+SELECT PARTICIPA.MEDALIAT, COMPETITIE.DATA_START,COMPETITIE.DATA_FINAL
+BULK COLLECT INTO t_indexat_comp
+FROM SPORTIV 
+JOIN PARTICIPA ON SPORTIV.ID_SPORTIV = PARTICIPA.ID_SPORTIV
+JOIN COMPETITIE ON PARTICIPA.ID_COMPETITIE = COMPETITIE.ID_COMPETITIE
+where sportiv.id_sportiv =v_id;
+IF t_indexat_sponsor.COUNT <>0 THEN
+for i in t_indexat_sponsor.FIRST..t_indexat_sponsor.LAST
+loop --aici intru pe un interval de sponsorizare
+    IF t_indexat_comp.COUNT <>0 THEN
+    nr_medaliati:=0;
+    numar_comp_int:=0;
+    
+        FOR j IN t_indexat_comp.FIRST..t_indexat_comp.LAST
+        loop
+   
+            if t_indexat_comp(j).comp_inc >= t_indexat_sponsor(i).spons_inc 
+                and t_indexat_comp(j).comp_sf <= t_indexat_sponsor(i).spons_sf
+            then
+                numar_comp_int:=numar_comp_int+1; --numarul de competitii la care a participat sportivul in intervalul in care a fost sponsorizat
+            end if;
+    
+            if t_indexat_comp(j).comp_inc >= t_indexat_sponsor(i).spons_inc 
+                 and t_indexat_comp(j).comp_sf <= t_indexat_sponsor(i).spons_sf
+                and t_indexat_comp(j).medalie =1
+            then
+            nr_medaliati:=nr_medaliati+1;
+    
+             end if;
+         end loop;
+    
+        if numar_comp_int = 0 then
+        DBMS_OUTPUT.PUT_LINE('In intervalul de sponsorizare: '||t_indexat_sponsor(i).spons_inc||' '||t_indexat_sponsor(i).spons_sf||
+        ' cu sponsorul: '||t_indexat_sponsor(i).spons_nume||' sportivul nu a participat la nicio competitie');
+        elsif nr_medaliati = 0 then
+         DBMS_OUTPUT.PUT_LINE('In intervalul de sponsorizare: '||t_indexat_sponsor(i).spons_inc||' '||t_indexat_sponsor(i).spons_sf||
+        ' cu sponsorul: '||t_indexat_sponsor(i).spons_nume||' sportivul nu a reusit sa obtina nicio medalie din '||numar_comp_int||' competitii la care a participat');
+    end if;
+    
+    ELSE
+     DBMS_OUTPUT.PUT_LINE('Sportivul nu a participat la nicio competitie pana acum');
+    END IF;
+    
+end loop;
+ELSE 
+ DBMS_OUTPUT.PUT_LINE('Sportivul nu a fost si nici nu este sponsorizat');
+END IF;
+
+EXCEPTION
+WHEN NO_DATA_FOUND THEN 
+RAISE_APPLICATION_ERROR(-20000,'NU EXISTA SPORTIVUL');
+WHEN TOO_MANY_ROWS THEN 
+RAISE_APPLICATION_ERROR(-20001,' SUNT MAI MULTI SPORTIVI CU ACELASI NUME');
+
+WHEN OTHERS THEN 
+RAISE_APPLICATION_ERROR(-20002,'ALTA EROARE');
+END;
+
+END pachet_proiect;
+/
+--TESTAM PACHETUL
+--EX 6
+/
+begin
+pachet_proiect.competitie_cheltuiala_2;
+end;
+/
+--EX 7
+/
+begin
+pachet_proiect.club_antr_sp;
+end;
+/
+--EX8
+/
+BEGIN
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('CUPA DE TOAMNA 2016')||'%');  --75%(4 sportivi,3 nu din lot) 
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('CUPA JAKED 2016')||'%'); -- 0% (1 sportiv, 0 nu din lot)
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('CUPA DE IARNA 2018')||'%'); --50% (2 sportivi, 1 nu din lot)
+DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('WORLD AQUATICS CHAMPIONSHIP 1')||'%'); -- 0% (2 sportivi, 
+                                                                                                            --0 nu din lot)
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('EUROPEAN GAMES 2021')||'%'); -- nu are participanti
+--DBMS_OUTPUT.PUT_LINE('PROCENTUL ESTE: '||pachet_proiect.NR_SPORTIVI_NU_LOT_COMP('FINA SWIMMING 2022')||'%'); --nu exista competitia
+EXCEPTION
+WHEN OTHERS THEN 
+DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM); 
+END;
+/
+--EX 9 (PENTRU A DA EROAREA DE TOO MANY ROWS SE VA INSERA ACEST SPORTIV, IAR DUPA EXECUTAREA PROCEDURII SE DA ROLLBACK)
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (13,'F','BELLU','SARA',TO_DATE('16-10-2001','dd-mm-yyyy'),1,'SPORTIV LOT',301,50);
+ROLLBACK;
+/
+
+BEGIN
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE CAT TIMP A FOST SPONSORIZAT : FIE NU A PARTICIPAT LA NICIO COMPETITIE
+--                                                           FIE NU A REUSIT SA OBTINA NICIO MEDALIE
+--pachet_proiect.sportiv_competitii_sponsor('MARINCA','RARES');
+
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE NU A PARTICIPAT LA NICIO COMPETITIE CAT TIMP A FOST SPOSORIZAT
+--pachet_proiect.sportiv_competitii_sponsor('POPESCU','ROBERT');
+
+-- EXEMPLU DE SPORTIV CARE NU A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    SI CARE NU A FOST NICIODATA SPONSORIZAT
+--pachet_proiect.sportiv_competitii_sponsor('STANCA','IULIA');
+
+-- NO_DATA_FOUND EXCEPTION
+--pachet_proiect.sportiv_competitii_sponsor('MARI','RALUCA'); 
+
+-- TOO_MANY_ROWS EXCEPTION (IN CAZUL IN CARE SE INSEREAZA VALORILE IN TABEL)
+-- In cazul in care s-a eliminat sportiva inserata pentru acest exercitiu (ramanand doar o sportiva cu numele BELLU SARA)
+-- ATUNCI acesta este un exemplu de sportiv care nu participa la competitii in Romania, 
+-- respectiv un exemplu de sportiv care este sponsorizat dar care nu a participat niciodata la o competitie 
+--sportiv_competitii_sponsor('BELLU','SARA'); 
+
+-- EXEMPLU DE SPORTIV CARE NU A PARTICIPAT LA NICIO PROBA SCURTA DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    SI CARE PE PERIOADA SPONSORIZARII NU A PARTICIPAT LA NICIO COMPETITIE
+--pachet_proiect.sportiv_competitii_sponsor('GROFF','PHILIPPE');
+
+-- EXEMPLU DE SPORTIV CARE A PARTICIPAT LA PROBELE SCURTE DIN CADRUL COMPETITIILOR DESFASURATE IN ROMANIA
+--                    DAR CARE NU A FOST SPONSORIZAT NICIODATA
+pachet_proiect.sportiv_competitii_sponsor('BLEJAN','ALEXANDRA'); 
+
+EXCEPTION
+WHEN OTHERS THEN 
+DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM); 
+END;
+/
+
+--EX 14
+/*
+    Pentru un sportiv al carui nume este dat ca parametru se doreste sa fie inscris la o proba al carei nume este dat ca 
+parametru din cadrul unei competitii al carei nume este dat ca parametru.
+Daca in trecut (ADICA LA COMPETITIILE CARE AU FOST INAINTEA ACESTEI COMPETITII CURENTE) s-a clasat
+cel putin o data in primii 15 la aceasta proba sau daca este prima  sa participare la o astfel de proba 
+si daca nu a fost inscris deja la aceasta proba (in competitia data) se vor insera datele corespunzatoare.
+(initial sportivul va fi trecut ca nemedaliat, ulterior dupa terminarea probei se va cunoaste daca va fi medaliat)
+In cazul in care a fost deja inscris sa se afiseze locurile,timpii obtinute in trecut la aceasta proba, dar si data cand a
+participat la proba.
+In cazul in care sportivul a fost deja inscris si este pentru prima data cand participa la acea proba, atunci se va afisa
+un mesaj din care sa reiasa ca nu are un istoric privind evolutia sa in cadrul acelei probe.
+
+   A se stii ca in cazul in care sportivul nu a reusit sa se claseze in primii 15 in urma participarii la aceasta proba,
+antrenorul poate decide sa fie inscris manual la concurs la acea proba. (aceste inserari se vor face la cerere si nu vor fi
+tratate in pachet).
+*/
+
+/
+CREATE OR REPLACE PACKAGE pachet_participari_comp_pr
+IS
+    function verif_participare(nume_sportiv SPORTIV.NUME%TYPE, --VERIFICAM DACA A MAI PARTICIPAT LA O ASTFEL DE
+                                            prenume_sportiv SPORTIV.PRENUME%TYPE, --PROBA IN TRECUT
+                                            nume_proba PROBA.NUME%TYPE,
+                                            nume_competitie COMPETITIE.NUME%TYPE)
+    RETURN BOOLEAN;
+
+    FUNCTION in_primii_15(nume_sportiv_2 SPORTIV.NUME%TYPE, 
+                                        prenume_sportiv_2 SPORTIV.PRENUME%TYPE,
+                                        nume_proba_2 PROBA.NUME%TYPE,
+                                        nume_competitie_2 COMPETITIE.NUME%TYPE)
+    RETURN NUMBER;
+    
+    FUNCTION verif_deja_inserat(sp_nume SPORTIV.NUME%TYPE,
+                                              sp_prenune SPORTIV.PRENUME%TYPE,
+                                              pr_nume PROBA.NUME%TYPE,
+                                              comp_nume COMPETITIE.NUME%TYPE)
+    RETURN BOOLEAN;
+    
+    PROCEDURE loc_timp_comp (nume_sp SPORTIV.NUME%TYPE,
+                            prenume_sp SPORTIV.PRENUME%TYPE,
+                            nume_pr PROBA.NUME%TYPE
+                            );
+                            
+    PROCEDURE inserare_afisare_sp_pr_comp(spo_nume SPORTIV.NUME%TYPE,
+                                          spo_prenume SPORTIV.PRENUME%TYPE,
+                                          pro_nume PROBA.NUME%TYPE,
+                                          compe_nume COMPETITIE.NUME%TYPE);
+
+END pachet_participari_comp_pr;
+/
+
+
+CREATE OR REPLACE PACKAGE BODY  pachet_participari_comp_pr
+IS
+
+function verif_participare(nume_sportiv SPORTIV.NUME%TYPE, --VERIFICAM DACA A MAI PARTICIPAT LA O ASTFEL DE
+                                            prenume_sportiv SPORTIV.PRENUME%TYPE, --PROBA IN TRECUT
+                                            nume_proba PROBA.NUME%TYPE,
+                                            nume_competitie COMPETITIE.NUME%TYPE)
+RETURN BOOLEAN IS
+    TYPE tablou_indexat_1 IS TABLE OF SPORTIV.ID_SPORTIV%TYPE INDEX BY PLS_INTEGER;
+    tablou_indexat_sportivi tablou_indexat_1;
+    
+    id_sp SPORTIV.ID_SPORTIV%TYPE;
+    id_pr PROBA.ID_PROBA%TYPE;
+    id_comp COMPETITIE.ID_COMPETITIE%TYPE;
+    ok NUMBER;
+    nr_partic_la_proba_in_trecut NUMBER;
+BEGIN
+
+SELECT ID_SPORTIV
+INTO id_sp
+FROM SPORTIV
+WHERE NUME = nume_sportiv AND PRENUME = prenume_sportiv; --DACA NU EXISTA SPORTIVUL DAT => INTOARCE NO_DATA_FOUND
+--DACA SUNT MAI MULTI SPORTIVI CU ACELASI NUME => TOO_MANY_ROWS
+SELECT ID_PROBA
+INTO id_pr
+FROM PROBA
+WHERE NUME = nume_proba;--DACA NU EXISTA PROBA => NO_DATA_FOUND
+
+SELECT ID_COMPETITIE
+INTO id_comp
+FROM COMPETITIE
+WHERE NUME = nume_competitie;
+
+--CAZUL IN CARE SPORTIVUL NU A MAI PARTICIPAT LA NICIO COMPETITE
+SELECT DISTINCT(ID_SPORTIV)
+BULK COLLECT INTO tablou_indexat_sportivi
+FROM PARTICIPA;
+
+ok:=0;
+IF tablou_indexat_sportivi.COUNT <> 0 THEN
+    FOR I IN tablou_indexat_sportivi.FIRST..tablou_indexat_sportivi.LAST
+        LOOP
+            IF tablou_indexat_sportivi(I) = id_sp THEN
+                ok:=1;--sportivul a mai participat la competitii
+            END IF;
+        END LOOP;
+END IF;
+
+IF ok=0 THEN
+    RETURN FALSE; --DACA SPORTIVUL NU A PARTICIPAT LA NICIO COMPETITIE PANA ACUM ESTE CLAR CA NU A MAI PARTICIPAT LA ACEA PROBA
+END IF;
+--Acum se verifica daca sportivul a mai participat in trecut la aceasta proba
+
+select count(*)
+INTO nr_partic_la_proba_in_trecut
+from sportiv
+right join participa on sportiv.id_sportiv = participa.id_sportiv
+left join proba on proba.id_proba = participa.id_proba
+left join competitie on competitie.id_competitie = participa.id_competitie
+where sportiv.nume= nume_sportiv AND sportiv.prenume=prenume_sportiv AND competitie.nume!=nume_competitie
+AND proba.nume = nume_proba;
+
+IF nr_partic_la_proba_in_trecut = 0 THEN
+    RETURN FALSE;
+ELSE
+    RETURN TRUE;
+END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20044,'NU EXISTA CEEA CE CAUTATI');
+    WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20045,'EXISTA MAI MULTI SPORTIVI CU ACEST NUME');
+END;
+
+FUNCTION in_primii_15(nume_sportiv_2 SPORTIV.NUME%TYPE, 
+                                        prenume_sportiv_2 SPORTIV.PRENUME%TYPE,
+                                        nume_proba_2 PROBA.NUME%TYPE,
+                                        nume_competitie_2 COMPETITIE.NUME%TYPE)
+RETURN NUMBER IS
+    id_sp_2 SPORTIV.ID_SPORTIV%TYPE;
+    id_pr_2 PROBA.ID_PROBA%TYPE;
+    id_comp_2 COMPETITIE.ID_COMPETITIE%TYPE;
+    
+    loc_pr_15 NUMBER:=-1;
+BEGIN
+    IF verif_participare(nume_sportiv_2,prenume_sportiv_2,nume_proba_2,nume_competitie_2) THEN --DACA A MAI PARTICIPAT LA PROBA
+
+    SELECT ID_SPORTIV
+    INTO id_sp_2
+    FROM SPORTIV
+    WHERE NUME = nume_sportiv_2 AND PRENUME = prenume_sportiv_2; --DACA NU EXISTA SPORTIVUL DAT => INTOARCE NO_DATA_FOUND
+    --DACA SUNT MAI MULTI SPORTIVI CU ACELASI NUME => TOO_MANY_ROWS
+
+    SELECT ID_PROBA
+    INTO id_pr_2
+    FROM PROBA
+    WHERE NUME = nume_proba_2;--DACA NU EXISTA PROBA => NO_DATA_FOUND
+
+    SELECT ID_COMPETITIE
+    INTO id_comp_2
+    FROM COMPETITIE
+    WHERE NUME = nume_competitie_2;
+    
+    SELECT COUNT(LOC_CLASAMENT)
+    INTO loc_pr_15
+    FROM REZULTAT
+    WHERE ID_PROBA = id_pr_2 AND ID_SPORTIV = id_sp_2 AND LOC_CLASAMENT < = 15;
+
+END IF;
+RETURN loc_pr_15;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20044,'NU EXISTA CEEA CE CAUTATI');
+    WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20045,'EXISTA MAI MULTI SPORTIVI CU ACEST NUME');
+
+
+END;
+
+FUNCTION verif_deja_inserat(sp_nume SPORTIV.NUME%TYPE,
+                                              sp_prenune SPORTIV.PRENUME%TYPE,
+                                              pr_nume PROBA.NUME%TYPE,
+                                              comp_nume COMPETITIE.NUME%TYPE)
+RETURN BOOLEAN 
+IS
+    id_sporti SPORTIV.ID_SPORTIV%TYPE;
+    id_prob PROBA.ID_PROBA%TYPE;
+    id_compet COMPETITIE.ID_COMPETITIE%TYPE;
+    
+    este_inscris NUMBER;
+BEGIN
+
+ SELECT ID_SPORTIV
+    INTO id_sporti
+    FROM SPORTIV
+    WHERE NUME = sp_nume AND PRENUME = sp_prenune; --DACA NU EXISTA SPORTIVUL DAT => INTOARCE NO_DATA_FOUND
+    --DACA SUNT MAI MULTI SPORTIVI CU ACELASI NUME => TOO_MANY_ROWS
+
+    SELECT ID_PROBA
+    INTO id_prob
+    FROM PROBA
+    WHERE NUME = pr_nume;--DACA NU EXISTA PROBA => NO_DATA_FOUND
+
+    SELECT ID_COMPETITIE
+    INTO id_compet
+    FROM COMPETITIE
+    WHERE NUME = comp_nume;
+    
+    SELECT COUNT(*)
+    INTO este_inscris
+    FROM PARTICIPA
+    WHERE ID_SPORTIV = id_sporti AND ID_COMPETITIE = id_compet AND ID_PROBA = id_prob;
+    
+    IF este_inscris = 0 THEN
+        RETURN FALSE;
+    ELSE
+        RETURN TRUE;
+    END IF;
+
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20044,'NU EXISTA CEEA CE CAUTATI');
+    WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20045,'EXISTA MAI MULTI SPORTIVI CU ACEST NUME');
+END;
+
+
+PROCEDURE loc_timp_comp (nume_sp SPORTIV.NUME%TYPE,
+                                          prenume_sp SPORTIV.PRENUME%TYPE,
+                                          nume_pr PROBA.NUME%TYPE
+                                          )
+                                    
+IS
+    idul_sp SPORTIV.ID_SPORTIV%TYPE;
+    idul_pr PROBA.ID_PROBA%TYPE;
+    
+    TYPE tipul_record IS RECORD
+    (loc_obtinut REZULTAT.LOC_CLASAMENT%TYPE,
+    timp REZULTAT.TIMP_OBTINUT%TYPE,
+    data_rez ISTORIC_SPORTIV.DATA_REZULTATE_SPORTIV%TYPE
+    );
+    
+    TYPE tablou_imbricat IS TABLE OF tipul_record;
+    tablou tablou_imbricat := tablou_imbricat();
+BEGIN
+    SELECT ID_SPORTIV
+    INTO idul_sp
+    FROM SPORTIV
+    WHERE NUME = nume_sp AND PRENUME = prenume_sp; --DACA NU EXISTA SPORTIVUL DAT => INTOARCE NO_DATA_FOUND
+    --DACA SUNT MAI MULTI SPORTIVI CU ACELASI NUME => TOO_MANY_ROWS
+
+    SELECT ID_PROBA
+    INTO idul_pr
+    FROM PROBA
+    WHERE NUME = nume_pr;--DACA NU EXISTA PROBA => NO_DATA_FOUND
+
+    SELECT LOC_CLASAMENT,TIMP_OBTINUT,DATA_REZULTATE_SPORTIV
+    BULK COLLECT INTO tablou
+    FROM REZULTAT
+    LEFT JOIN ISTORIC_SPORTIV ON REZULTAT.ID_REZULTAT = ISTORIC_SPORTIV.ID_REZULTAT
+    WHERE REZULTAT.ID_PROBA = idul_pr AND REZULTAT.ID_SPORTIV = idul_sp;
+    
+    IF tablou.COUNT <> 0 THEN
+        DBMS_OUTPUT.PUT_LINE('Sportivul '||nume_sp||' '||prenume_sp||' a mai participat la proba '||nume_pr);
+         DBMS_OUTPUT.PUT_LINE('Avand rezultatele:');
+        DBMS_OUTPUT.NEW_LINE;
+        
+        FOR i IN tablou.FIRST..tablou.LAST
+            LOOP
+                DBMS_OUTPUT.PUT_LINE('Locul:'||tablou(i).loc_obtinut||', cu timpul:'||tablou(i).timp||'s,  in data de:'
+                ||tablou(i).data_rez);
+            END LOOP;
+    ELSE DBMS_OUTPUT.PUT_LINE('Sportivul '||nume_sp||' '||prenume_sp||' nu a mai participat la proba '||nume_pr||', fiind 
+    introdus manual la aceasta proba');
+    END IF;
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20044,'NU EXISTA CEEA CE CAUTATI');
+    WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20045,'EXISTA MAI MULTI SPORTIVI CU ACEST NUME');
+END;
+
+
+PROCEDURE inserare_afisare_sp_pr_comp(spo_nume SPORTIV.NUME%TYPE,
+                                                        spo_prenume SPORTIV.PRENUME%TYPE,
+                                                        pro_nume PROBA.NUME%TYPE,
+                                                        compe_nume COMPETITIE.NUME%TYPE)
+IS
+    id_spo SPORTIV.ID_SPORTIV%TYPE;
+    id_pro PROBA.ID_PROBA%TYPE;
+    id_compe COMPETITIE.ID_COMPETITIE%TYPE;
+BEGIN
+
+    SELECT ID_SPORTIV
+    INTO id_spo
+    FROM SPORTIV
+    WHERE NUME = spo_nume AND PRENUME = spo_prenume;
+    
+    SELECT ID_PROBA
+    INTO id_pro
+    FROM PROBA
+    WHERE NUME = pro_nume;
+    
+    SELECT ID_COMPETITIE
+    INTO id_compe
+    FROM COMPETITIE
+    WHERE NUME = compe_nume;
+    
+    IF (in_primii_15(spo_nume,spo_prenume,pro_nume,compe_nume)>=1  OR verif_participare(spo_nume,spo_prenume,pro_nume,compe_nume)= FALSE)
+        AND verif_deja_inserat(spo_nume,spo_prenume,pro_nume,compe_nume)= FALSE
+       
+    THEN
+        INSERT INTO PARTICIPA VALUES(id_spo,id_compe,id_pro,0);
+        --INITIAL SE VA TRECE CA NEMEDALIAT DEOARECE INCA NU A PARTICIPAT LA PROBA SI ULTERIOR DUPA TERMINAREA PROBEI SE VA 
+        --ACTUALIZA DACA ESTE CAZUL
+    ELSIF verif_deja_inserat(spo_nume,spo_prenume,pro_nume,compe_nume)= TRUE THEN
+        loc_timp_comp(spo_nume,spo_prenume,pro_nume);
+
+    END IF;
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RAISE_APPLICATION_ERROR(-20044,'NU EXISTA CEEA CE CAUTATI');
+    WHEN TOO_MANY_ROWS THEN
+        RAISE_APPLICATION_ERROR(-20045,'EXISTA MAI MULTI SPORTIVI CU ACEST NUME');
+END;
+
+END pachet_participari_comp_pr;
+
+/
+
+BEGIN
+
+------------------------------------
+--1.1
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('BLEJAN','MARIA','50 LIBER','CUPA JAKED 2016');
+--NU EXISTA CEEA CE CAUTATI
+
+----------------------------------
+--1.2 (se va insera un sportiv tot cu numele BELLU SARA)
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('BELLU','SARA','50 LIBER','CUPA JAKED 2016');
+--mai multi cu acelasi nume
+
+---------------------------------
+--2 (inainte de a rula acest caz trebuie executata linia de cod:  INSERT INTO PARTICIPA VALUES(1,3,1,0);
+--    dupa rularea procedurii se va da rollback)
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('MARINCA','RARES','50 LIBER','CUPA ANDREI NICOLESCU EDITIA 1');
+--era deja inscris la acea proba din cadrul competitiei dorite si a mai avut participari anterioare
+--=> AFISEAZA CE LOCURI, TIMP SI IN CE DATA A MAI PARTICIPAT LA ACEA PROBA
+
+-----------------------------------
+--3
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('MARINCA','RARES','50 LIBER','CUPA JAKED 2016');
+--sportivul a mai participat la aceasta proba si a venit in primii 15 cel putin o data
+--si nu a fost deja inscris => se va insera in tabel
+
+------------------------------------
+--4
+pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('STANCA','IULIA','50 LIBER','FINA SWIMMING WORLD CUP 2021');
+--acest sportiv nu a mai participat la aceasta proba pana acum (acest sportiv chiar nu a mai participat la nicio competitie)
+--se va insera in tabelul PARTICIPA (competitia: ID =8, sportiv: ID =3, proba: ID = 1)
+
+--4.2
+--dupa ce s-a rulat acest caz se va da rollback si se va rula: INSERT INTO PARTICIPA VALUES(3,8,1,0);
+--urmand se se ruleze iar procedura => nu a mai participat la aceasta proba in trecut
+-------------------------------------
+--5
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('MARINCA','RARES','50 SPATE','CUPA JAKED 2016');
+--NU A MAI FOST LA O ASTFEL DE PROBA PANA ACUM, deci se va insera in tabel
+
+------------------------------------
+--6
+--pachet_participari_comp_pr.inserare_afisare_sp_pr_comp('BLEJAN','ALEXANDRA','50 LIBER','CUPA JAKED 2016');
+--la aceasta proba a iesit pe locul 100,deci doar prin inserare manuala la spusele antrenorului
+--o sa mai fie inscrisa la aceasta proba
+--nu o sa fie inserat => in participa va ramane doar (7,1,1,0)
+
+EXCEPTION
+WHEN OTHERS THEN 
+DBMS_OUTPUT.PUT_LINE('Eroarea are codul = '||SQLCODE || ' si mesajul = ' || SQLERRM);
+END;
+/
+SELECT *FROM PARTICIPA;
+----------------
+--pentru 1.2
+INSERT INTO sportiv(id_sportiv,gen,nume,prenume,anul_nasterii,id_nationalitate,tip_sportiv,indemnizatie,id_antrenor)
+VALUES (13,'F','BELLU','SARA',TO_DATE('16-08-2001','dd-mm-yyyy'),1,'SPORTIV LOT',301,50);
+ROLLBACK;
+----------------
+--pentru 2.
+INSERT INTO PARTICIPA VALUES(1,3,1,0); --COMP 3  => CUPA ANDREI NICOLESCU EDITIA 1
+ROLLBACK;
+-----------------
+--pentru 4.2
+INSERT INTO PARTICIPA VALUES(3,8,1,0);--presupunem ca se introduce manual prima participare a unui sportiv la o proba
+ROLLBACK;
+----------------
+/
+
+
+
+
+
+
+
+
+
